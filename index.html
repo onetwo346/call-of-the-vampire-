@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call of the Vampire</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #1a1a2e;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        #threejs-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #dialogue-box {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+        }
+        #vampire-text {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        #options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .option-btn {
+            background: #4a4a8e;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .option-btn:hover {
+            background: #6a6aae;
+        }
+        #game-over, #game-win {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        #game-over h1, #game-win h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        #restart-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #restart-btn:hover {
+            background: #ff6666;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="threejs-canvas"></div>
+        <div id="dialogue-box">
+            <div id="vampire-text"></div>
+            <div id="options"></div>
+        </div>
+        <div id="game-over">
+            <h1>The Vampires Got In!</h1>
+            <p>The night ended in darkness. Better luck next time.</p>
+            <button id="restart-btn">Restart</button>
+        </div>
+        <div id="game-win">
+            <h1>You Survived the Night!</h1>
+            <p>The party continued until dawn. Well done!</p>
+            <button id="restart-btn">Play Again</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // Three.js Setup for 3D Animations
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('threejs-canvas').appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(0, 1, 1);
+        scene.add(directionalLight);
+
+        // Placeholder for 3D Barn Environment
+        // You would need to load a 3D model of the barn (e.g., .glb or .fbx file) using a loader like GLTFLoader
+        // For now, we'll create a simple plane as the barn floor
+        const barnFloorGeometry = new THREE.PlaneGeometry(20, 20);
+        const barnFloorMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Brown wood color
+        const barnFloor = new THREE.Mesh(barnFloorGeometry, barnFloorMaterial);
+        barnFloor.rotation.x = -Math.PI / 2;
+        scene.add(barnFloor);
+
+        // Placeholder for 3D Characters
+        // You would need to load 3D models for the partygoers, Riley, and vampires
+        // Each character should have animations (e.g., dancing, playing instruments, walking)
+        // For now, we'll use simple cubes as placeholders
+        const characterGeometry = new THREE.BoxGeometry(0.5, 1, 0.5);
+        const characterMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const partygoer = new THREE.Mesh(characterGeometry, characterMaterial);
+        partygoer.position.set(2, 0.5, 2);
+        scene.add(partygoer);
+
+        // Camera Position
+        camera.position.z = 5;
+        camera.position.y = 2;
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            // Add character animations here (e.g., partygoers dancing, vampires walking)
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Game Logic
+        const gameState = {
+            lives: 3,
+            currentVampire: 0,
+            vampires: [
+                {
+                    name: "Lucien",
+                    questions: [
+                        {
+                            text: "It looks so warm and lively in there, and I’ve traveled such a long way. Surely a kind soul like you wouldn’t leave a weary traveler out in the cold, would you?",
+                            options: [
+                                { text: "Sorry, I don’t know you. You’ll have to stay outside.", safe: true },
+                                { text: "Oh, you poor thing! Come in and warm up!", safe: false },
+                                { text: "The party’s for invited guests only. Are you on the list?", safe: true }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Mara",
+                    questions: [
+                        {
+                            text: "I used to come to this barn all the time as a child, but I haven’t been back in years. It would mean so much to step inside and relive those memories… you wouldn’t deny me that, would you?",
+                            options: [
+                                { text: "That’s sweet, but I can’t let strangers in.", safe: true },
+                                { text: "Wow, that sounds special. You’re welcome to join us!", safe: false },
+                                { text: "I’m sorry, but the party’s private tonight.", safe: true }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Viktor",
+                    questions: [
+                        {
+                            text: "I don’t like being kept waiting, kid. It’s cold out here, and I’m not a patient man. Are you going to let me in, or do I have to make things difficult?",
+                            options: [
+                                { text: "I’m not scared of you. Stay outside.", safe: true },
+                                { text: "Okay, okay, just come in—I don’t want trouble!", safe: false },
+                                { text: "You’re not welcome here. Leave now.", safe: true }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const vampireText = document.getElementById('vampire-text');
+        const optionsDiv = document.getElementById('options');
+        const gameOverDiv = document.getElementById('game-over');
+        const gameWinDiv = document.getElementById('game-win');
+
+        function startGame() {
+            gameState.lives = 3;
+            gameState.currentVampire = 0;
+            gameOverDiv.style.display = 'none';
+            gameWinDiv.style.display = 'none';
+            showVampireQuestion();
+        }
+
+        function showVampireQuestion() {
+            if (gameState.currentVampire >= gameState.vampires.length) {
+                // Player wins
+                gameWinDiv.style.display = 'block';
+                return;
+            }
+
+            const vampire = gameState.vampires[gameState.currentVampire];
+            const question = vampire.questions[0]; // For simplicity, each vampire has 1 question
+            vampireText.textContent = `${vampire.name}: ${question.text}`;
+
+            // Display options
+            optionsDiv.innerHTML = '';
+            question.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = option.text;
+                btn.addEventListener('click', () => handleOption(option.safe));
+                optionsDiv.appendChild(btn);
+            });
+
+            // Animate vampire approaching the door (placeholder)
+            console.log(`${vampire.name} approaches the door...`);
+        }
+
+        function handleOption(safe) {
+            if (!safe) {
+                gameState.lives--;
+                if (gameState.lives <= 0) {
+                    // Game over
+                    gameOverDiv.style.display = 'block';
+                    return;
+                }
+            }
+
+            // Move to the next vampire
+            gameState.currentVampire++;
+            showVampireQuestion();
+        }
+
+        // Restart Game
+        document.querySelectorAll('#restart-btn').forEach(btn => {
+            btn.addEventListener('click', startGame);
+        });
+
+        // Start the game
+        startGame();
+    </script>
+</body>
+</html>
