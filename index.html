@@ -106,8 +106,9 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/GLTFLoader.js"></script>
     <script>
-        // Three.js Setup for 3D Animations
+        // Three.js Setup
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -117,37 +118,122 @@
         // Lighting
         const ambientLight = new THREE.AmbientLight(0x404040);
         scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5); // Warm interior light
         directionalLight.position.set(0, 1, 1);
         scene.add(directionalLight);
+        const moonlight = new THREE.DirectionalLight(0x87CEEB, 0.3); // Blue moonlight
+        moonlight.position.set(0, 5, -10);
+        scene.add(moonlight);
 
-        // Placeholder for 3D Barn Environment
-        // You would need to load a 3D model of the barn (e.g., .glb or .fbx file) using a loader like GLTFLoader
-        // For now, we'll create a simple plane as the barn floor
+        // Barn Environment
         const barnFloorGeometry = new THREE.PlaneGeometry(20, 20);
-        const barnFloorMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Brown wood color
+        const barnFloorMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Brown wood
         const barnFloor = new THREE.Mesh(barnFloorGeometry, barnFloorMaterial);
         barnFloor.rotation.x = -Math.PI / 2;
         scene.add(barnFloor);
 
-        // Placeholder for 3D Characters
-        // You would need to load 3D models for the partygoers, Riley, and vampires
-        // Each character should have animations (e.g., dancing, playing instruments, walking)
-        // For now, we'll use simple cubes as placeholders
-        const characterGeometry = new THREE.BoxGeometry(0.5, 1, 0.5);
-        const characterMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const partygoer = new THREE.Mesh(characterGeometry, characterMaterial);
-        partygoer.position.set(2, 0.5, 2);
-        scene.add(partygoer);
+        // String Lights (Simulate movement with slight flickering)
+        const stringLights = [];
+        for (let i = 0; i < 10; i++) {
+            const lightGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+            const lightMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, emissive: 0xffff00 });
+            const light = new THREE.Mesh(lightGeometry, lightMaterial);
+            light.position.set((i - 5) * 2, 5, 0); // Ceiling of the loft
+            scene.add(light);
+            stringLights.push(light);
+        }
+
+        // Character Movement System
+        const characters = [];
+        const clock = new THREE.Clock();
+        const moveSpeed = 0.02; // Speed of movement
+
+        // Load Character (Placeholder with Movement)
+        function loadCharacter(position, type, animationType) {
+            const geometry = new THREE.BoxGeometry(0.5, 1, 0.5);
+            const material = new THREE.MeshBasicMaterial({ color: type === 'vampire' ? 0xff0000 : (type === 'riley' ? 0x0000ff : 0x00ff00) });
+            const character = new THREE.Mesh(geometry, material);
+            character.position.set(position.x, position.y + 0.5, position.z);
+            character.userData = {
+                targetPosition: { x: position.x, z: position.z },
+                moveRange: type === 'partygoer' ? 2 : 0, // Partygoers roam, others stay
+                type: type,
+                animationType: animationType
+            };
+            scene.add(character);
+            characters.push(character);
+            return character;
+        }
+
+        // Partygoer Positions (Based on Image)
+        const loftPositions = [
+            { x: 4, y: 3, z: 2 }, { x: 3, y: 3, z: 1 }, { x: 5, y: 3, z: 0 },
+            { x: 2, y: 3, z: -1 }, { x: 4, y: 3, z: -2 }, { x: 6, y: 3, z: 1 }
+        ];
+        const groundPositions = [
+            { x: -2, y: 0, z: 2 }, { x: -1, y: 0, z: 1 }, { x: 0, y: 0, z: 0 },
+            { x: 1, y: 0, z: -1 }, { x: 2, y: 0, z: -2 }, { x: -3, y: 0, z: 0 },
+            { x: 3, y: 0, z: 1 }, { x: -2, y: 0, z: -1 }, { x: 0, y: 0, z: 2 },
+            { x: 1, y: 0, z: 1 }, { x: -1, y: 0, z: -2 }, { x: 2, y: 0, z: 0 }
+        ];
+        const musicianPositions = [
+            { x: -5, y: 0, z: -5 }, { x: -4, y: 0, z: -5 }, { x: -3, y: 0, z: -5 }
+        ];
+
+        // Load Partygoers
+        loftPositions.forEach(pos => loadCharacter(pos, 'partygoer', pos.x === 4 && pos.z === 2 ? 'playing_piano' : 'dancing'));
+        groundPositions.forEach(pos => loadCharacter(pos, 'partygoer', 'dancing'));
+        musicianPositions.forEach(pos => loadCharacter(pos, 'partygoer', 'playing_instrument'));
+
+        // Load Riley
+        const riley = loadCharacter({ x: 0, y: 0, z: -3 }, 'riley', 'idle');
+        riley.userData.isPlayer = true;
+
+        // Load Vampires (Start outside)
+        const vampireStartPosition = { x: 0, y: 0, z: -10 };
+        let currentVampire = null;
+        const vampires = [
+            { name: "Lucien", color: 0xff0000 },
+            { name: "Mara", color: 0xff00ff },
+            { name: "Viktor", color: 0x00ffff }
+        ];
 
         // Camera Position
-        camera.position.z = 5;
-        camera.position.y = 2;
+        camera.position.set(0, 5, 10);
+        camera.lookAt(0, 0, 0);
 
-        // Animation Loop
+        // Animation Loop with Movement
         function animate() {
             requestAnimationFrame(animate);
-            // Add character animations here (e.g., partygoers dancing, vampires walking)
+            const delta = clock.getDelta();
+
+            // Move Characters
+            characters.forEach(character => {
+                const data = character.userData;
+                if (data.type === 'partygoer' && data.moveRange > 0) {
+                    // Random movement within range
+                    if (Math.random() < 0.01) {
+                        data.targetPosition.x = character.position.x + (Math.random() - 0.5) * data.moveRange * 2;
+                        data.targetPosition.z = character.position.z + (Math.random() - 0.5) * data.moveRange * 2;
+                    }
+                    character.position.x += (data.targetPosition.x - character.position.x) * moveSpeed;
+                    character.position.z += (data.targetPosition.z - character.position.z) * moveSpeed;
+                } else if (data.type === 'vampire' && character === currentVampire) {
+                    // Vampire moves toward door
+                    const targetZ = -4; // Near the door
+                    character.position.z += (targetZ - character.position.z) * moveSpeed * 2;
+                    if (Math.abs(character.position.z - targetZ) < 0.1) character.position.z = targetZ;
+                }
+
+                // Simple rotation to simulate animation (e.g., dancing or talking)
+                character.rotation.y += delta * 0.5;
+            });
+
+            // Flicker string lights
+            stringLights.forEach(light => {
+                light.material.emissiveIntensity = 1 + Math.sin(Date.now() * 0.001 + light.position.x) * 0.2;
+            });
+
             renderer.render(scene, camera);
         }
         animate();
@@ -155,7 +241,7 @@
         // Game Logic
         const gameState = {
             lives: 3,
-            currentVampire: 0,
+            currentVampireIndex: 0,
             vampires: [
                 {
                     name: "Lucien",
@@ -206,24 +292,28 @@
 
         function startGame() {
             gameState.lives = 3;
-            gameState.currentVampire = 0;
+            gameState.currentVampireIndex = 0;
             gameOverDiv.style.display = 'none';
             gameWinDiv.style.display = 'none';
+            if (currentVampire) scene.remove(currentVampire);
+            currentVampire = null;
             showVampireQuestion();
         }
 
         function showVampireQuestion() {
-            if (gameState.currentVampire >= gameState.vampires.length) {
-                // Player wins
+            if (gameState.currentVampireIndex >= gameState.vampires.length) {
                 gameWinDiv.style.display = 'block';
                 return;
             }
 
-            const vampire = gameState.vampires[gameState.currentVampire];
-            const question = vampire.questions[0]; // For simplicity, each vampire has 1 question
-            vampireText.textContent = `${vampire.name}: ${question.text}`;
+            const vampireData = gameState.vampires[gameState.currentVampireIndex];
+            const question = vampireData.questions[0];
+            vampireText.textContent = `${vampireData.name}: ${question.text}`;
 
-            // Display options
+            if (currentVampire) scene.remove(currentVampire);
+            currentVampire = loadCharacter({ x: 0, y: 0, z: -10 }, 'vampire', 'walking');
+            currentVampire.material.color.set(vampires[gameState.currentVampireIndex].color);
+
             optionsDiv.innerHTML = '';
             question.options.forEach((option, index) => {
                 const btn = document.createElement('button');
@@ -232,32 +322,24 @@
                 btn.addEventListener('click', () => handleOption(option.safe));
                 optionsDiv.appendChild(btn);
             });
-
-            // Animate vampire approaching the door (placeholder)
-            console.log(`${vampire.name} approaches the door...`);
         }
 
         function handleOption(safe) {
             if (!safe) {
                 gameState.lives--;
                 if (gameState.lives <= 0) {
-                    // Game over
                     gameOverDiv.style.display = 'block';
                     return;
                 }
             }
-
-            // Move to the next vampire
-            gameState.currentVampire++;
+            gameState.currentVampireIndex++;
             showVampireQuestion();
         }
 
-        // Restart Game
         document.querySelectorAll('#restart-btn').forEach(btn => {
             btn.addEventListener('click', startGame);
         });
 
-        // Start the game
         startGame();
     </script>
 </body>
