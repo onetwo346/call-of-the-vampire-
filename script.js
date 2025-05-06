@@ -24,10 +24,9 @@ window.addEventListener('resize', onWindowResize);
 const barnGroup = new THREE.Group();
 scene.add(barnGroup);
 
-const floorTexture = new THREE.TextureLoader().load('https://i.imgur.com/example_wood.jpg'); // Placeholder, replace with real texture URL
 const barnFloor = new THREE.Mesh(
     new THREE.BoxGeometry(10, 0.2, 8),
-    new THREE.MeshStandardMaterial({ map: floorTexture, color: 0x8B4513 })
+    new THREE.MeshStandardMaterial({ color: 0x8B4513 })
 );
 barnFloor.position.y = 0.1;
 barnGroup.add(barnFloor);
